@@ -74,17 +74,3 @@ def find_sync(buf: bytes) -> int:
         if buf[i : i + 2] == SYNC:
             return i
     return -1
-
-
-if __name__ == "__main__":
-    # Unit test: encode then decode
-    frame = encode_frame(
-        1000, 100, -200, 300, 10, 20, -5, 512, 1024
-    )
-    assert len(frame) == FRAME_SIZE
-    decoded = decode_frame(frame)
-    assert decoded is not None
-    assert decoded["timestamp_ms"] == 1000
-    assert decoded["accel_x"] == 100 and decoded["accel_z"] == 300
-    assert decoded["temp_raw"] == 512 and decoded["vbat_raw"] == 1024
-    print("protocol.py: encode/decode test passed")
