@@ -1,28 +1,28 @@
 # Telemetry Node
 
-Real-time embedded telemetry logger: ESP32 + FreeRTOS samples IMU, temperature, and battery voltage at a fixed rate and streams binary frames over UART. A Python host tool decodes the stream and outputs CSV.
+Real-time embedded telemetry logger: ESP32 + FreeRTOS samples IMU, temperature, and battery voltage at a fixed rate and streams binary frames over UART. A Python host tool decodes the stream and writes CSV.
 
-**Resume bullet:** Designed and implemented real-time telemetry logger (ESP32, FreeRTOS): fixed-rate multi-sensor sampling, binary wire protocol with CRC, Python host tool for decode and CSV export.
+Resume bullet: Designed and implemented a real-time telemetry logger (ESP32, FreeRTOS) with fixed-rate multi-sensor sampling, CRC-protected binary protocol, and Python decode/export tooling.
 
 ## Hardware
 
-- **ESP32** dev board (e.g. ESP32-WROOM-32 with USB-serial)
-- **MPU6050** IMU (I2C, 3.3 V)
-- **Battery** voltage: divider to ADC pin (optional; for bench leave unconnected or tie to 3.3 V)
-- **Temp:** ESP32 internal temperature sensor (no extra hardware)
+- ESP32 dev board (for example ESP32-WROOM-32)
+- MPU6050 IMU (I2C, 3.3 V)
+- Optional battery divider to ADC pin
+- ESP32 internal temperature sensor
 
 ## Wiring
 
-| ESP32   | MPU6050   |
-|---------|-----------|
-| GPIO 21 (SDA) | SDA      |
-| GPIO 22 (SCL) | SCL      |
-| 3.3 V   | VCC       |
-| GND     | GND       |
+| ESP32 | MPU6050 |
+|---|---|
+| GPIO 21 (SDA) | SDA |
+| GPIO 22 (SCL) | SCL |
+| 3.3 V | VCC |
+| GND | GND |
 
-Battery (optional): voltage divider (e.g. 2:1) to **GPIO 34** (ADC1_6, 3.3 V max input). Edit `firmware/src/config.h` to change pins.
+Battery (optional): divider to GPIO 34 (ADC1_6). Update pin config in `firmware/src/config.h` if needed.
 
-## Firmware (ESP32)
+## Firmware
 
 ```bash
 cd firmware
@@ -30,45 +30,52 @@ pio run
 pio run -t upload
 ```
 
-UART: 115200 8N1, TX/RX to USB (default pins on most dev boards).
+UART defaults to `115200 8N1`.
 
-## Host tool (Python)
-
-**Using a venv (recommended):**
+## Host Tool
 
 ```powershell
 cd host
-.\setup_venv.ps1                    # creates .venv and installs pyserial
-.\.venv\Scripts\Activate.ps1        # activate (optional; run_test uses venv automatically)
-.\run_test.ps1                      # run protocol unit test
-.\.venv\Scripts\python.exe decode_telemetry.py --port COM3
+.\setup_venv.ps1
+.\run_test.ps1
+.\.venv\Scripts\python.exe decode_telemetry.py --port COM3 --out data.csv
 ```
 
-**Without venv:** `pip install -r requirements.txt` then `python decode_telemetry.py --port COM3` (or `/dev/ttyUSB0` on Linux). Optional: `--out data.csv`.
+Linux/macOS serial examples:
+
+```bash
+python decode_telemetry.py --port /dev/ttyUSB0 --out data.csv
+python decode_telemetry.py --port /dev/ttyACM0 --out data.csv
+```
 
 ## Protocol
 
-Binary frames: sync `0xAA 0x55` | length (1 B) | payload (20 B) | CRC16 (2 B). See [docs/protocol.md](docs/protocol.md).
+Frame format:
+
+- Sync: `0xAA 0x55`
+- Length: `1 byte` (payload length = 20)
+- Payload: timestamp + accel/gyro/temp/vbat fields
+- CRC16: `2 bytes` little-endian over payload bytes
+
+See `docs/protocol.md` for full layout and deterministic fixture bytes used in host tests.
 
 ## Verification
 
-1. **Host only:** `cd host && python protocol.py` — encode/decode unit test (no hardware).
-2. **Firmware + host:** Flash firmware, connect USB, run `python decode_telemetry.py --port COMx`. You should see CSV rows at ~100 Hz. Without MPU6050 wired, accel/gyro are zero; temp and vbat are from ESP32 internal sensor and ADC.
+1. Host protocol checks (no hardware):
+   - `python -m unittest discover -s host/tests -p "test_*.py"`
+   - `python -m ruff check host`
+2. Firmware + host stream:
+   - Flash firmware, then run decoder with your serial port.
+   - Confirm CSV rows arrive around the configured sample interval.
 
-## Design
+## CI
 
-Fixed-rate multi-sensor sampling (FreeRTOS timer), binary wire protocol with sync and CRC16. See [docs/protocol.md](docs/protocol.md) for frame format.
+GitHub Actions runs:
 
-## Pushing to GitHub
-
-Create a new repository on GitHub (e.g. `jmahotiedu/telemetry-node`), then:
-
-```bash
-git remote add origin https://github.com/jmahotiedu/telemetry-node.git
-git push -u origin master
-```
-
-CI runs on push: firmware build (PlatformIO) and host protocol unit test (Python).
+- ESP32 firmware build via PlatformIO
+- Host dependency install
+- Host static check (`ruff`)
+- Host protocol tests (`unittest`)
 
 ## License
 

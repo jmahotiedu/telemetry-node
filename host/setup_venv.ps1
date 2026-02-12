@@ -21,4 +21,4 @@ if (-not (Test-Path $venv)) {
 & (Join-Path $venv "Scripts\pip.exe") install --quiet -r (Join-Path $PSScriptRoot "requirements.txt")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host "venv ready at $venv. Activate with: .\.venv\Scripts\Activate.ps1"
-Write-Host "Run test: .\.venv\Scripts\python.exe protocol.py"
+Write-Host "Run test: .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_*.py"

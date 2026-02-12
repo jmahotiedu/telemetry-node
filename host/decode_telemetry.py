@@ -5,7 +5,7 @@ Usage: python decode_telemetry.py --port COM3 [--out data.csv] [--baud 115200]
 """
 import argparse
 import sys
-from protocol import SYNC, FRAME_SIZE, decode_frame, find_sync
+from protocol import FRAME_SIZE, decode_frame, find_sync
 
 def main():
     ap = argparse.ArgumentParser(description="Decode telemetry stream from UART")

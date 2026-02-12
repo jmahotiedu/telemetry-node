@@ -32,8 +32,27 @@ All multi-byte values are **little-endian**.
 
 ## Example (hex)
 
-Sync + len(20) + 20-byte payload + CRC16:
+Deterministic fixture used in `host/tests/test_protocol.py`:
 
 ```
-AA 55 14 [20 bytes payload] XX XX
+aa5514e8030000640038ff2c010a001400fbff00020004449d
 ```
+
+Decoded fields for that frame:
+
+- `timestamp_ms=1000`
+- `accel_x=100`, `accel_y=-200`, `accel_z=300`
+- `gyro_x=10`, `gyro_y=20`, `gyro_z=-5`
+- `temp_raw=512`, `vbat_raw=1024`
+
+## Host serial paths
+
+Windows:
+
+- Typical port: `COM3` (or any `COMx` assigned in Device Manager)
+- Example: `python decode_telemetry.py --port COM3 --out data.csv`
+
+Linux:
+
+- Typical USB serial paths: `/dev/ttyUSB0` or `/dev/ttyACM0`
+- Example: `python decode_telemetry.py --port /dev/ttyUSB0 --out data.csv`
